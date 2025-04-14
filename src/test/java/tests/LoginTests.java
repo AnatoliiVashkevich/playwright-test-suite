@@ -17,7 +17,6 @@ public class LoginTests {
         browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false));
     }
 
-
     @BeforeEach
     void setup() {
         context = browser.newContext();
@@ -25,15 +24,54 @@ public class LoginTests {
     }
 
     @Test
-    void successfulLogin() throws InterruptedException {
+    void successfulLogin() {
         page.navigate("https://the-internet.herokuapp.com/login");
         page.fill("#username", "tomsmith");
         page.fill("#password", "SuperSecretPassword!");
         page.click("button[type='submit']");
 
-        Thread.sleep(5000);
+        Locator successMessage = page.locator(".flash.success");
+        successMessage.waitFor(); // Wait until it appears
 
-        assertTrue(page.locator(".flash.success").isVisible(), "Success message should appear");
+        assertTrue(successMessage.isVisible(), "Success message should appear");
+    }
+
+    @Test
+    void loginWithWrongPasswordShowsError() {
+        page.navigate("https://the-internet.herokuapp.com/login");
+        page.fill("#username", "tomsmith");
+        page.fill("#password", "WrongPassword");
+        page.click("button[type='submit']");
+
+        Locator errorMessage = page.locator(".flash.error");
+        errorMessage.waitFor();
+
+        assertTrue(errorMessage.textContent().contains("Your password is invalid!"),
+                "Should show invalid password error");
+    }
+
+    @Test
+    void loginWithEmptyFieldsShowsError() {
+        page.navigate("https://the-internet.herokuapp.com/login");
+        page.click("button[type='submit']");
+
+        Locator errorMessage = page.locator(".flash.error");
+        errorMessage.waitFor();
+
+        assertTrue(errorMessage.isVisible(), "Should show error for empty fields");
+    }
+
+    @Test
+    void loginWithInvalidUsernameShowsError() {
+        page.navigate("https://the-internet.herokuapp.com/login");
+        page.fill("#username", "invalidUser");
+        page.fill("#password", "SuperSecretPassword!");
+        page.click("button[type='submit']");
+
+        Locator errorMessage = page.locator(".flash.error");
+        errorMessage.waitFor();
+
+        assertTrue(errorMessage.isVisible(), "Should show error for invalid username");
     }
 
     @AfterEach
